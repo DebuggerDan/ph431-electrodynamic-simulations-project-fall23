@@ -13,6 +13,7 @@ import matplotlib as mplotlib
 import matplotlib.pyplot as plot
 import threading
 import tkinter as tk
+from tkinterweb import HtmlFrame
 from tkinter import ttk
 from matplotlib import animation
 from matplotlib.animation import FuncAnimation
@@ -22,6 +23,9 @@ from ipywidgets import widgets as wd
 from ipywidgets import interactive
 from IPython.display import display, HTML
 import imageio
+from PIL import Image, ImageTk
+import requests
+from io import BytesIO
 
 ### Main tkinter-based GUI encapulation-wrapper program
 class CoolGUI(tk.Tk):
@@ -29,22 +33,31 @@ class CoolGUI(tk.Tk):
     def __init__(self):
         
         super().__init__()
+        self.option_add('*font', ('comic sans ms', 12, 'bold'))
         self.title("PH 431 Project - Exploration of Electrodynamic Simulations: Electric Fields, Potentials, & Point Charges by Dan J.")
         
         # Initialize tabs for our three simulation sections,
         # ...Part 2: Electric Field Simulation, Part 3: Electric Potential @ Midpoint, Part 4: Oscillating Point Charge.
         simulation_tabs = ttk.Notebook(self)
-        #self.initialize_part1()
+        self.initialize_part1(simulation_tabs)
         self.create_part2_tab(simulation_tabs)
         self.create_part3_tab(simulation_tabs)
         self.create_part4_tab(simulation_tabs)
         # Bonus: Fun MIDI music-player
-        self.plug_in_ipod(simulation_tabs)
+        #self.plug_in_ipod(simulation_tabs)
         
         # Pack all three simulation-section tabs into our main GUI window!
         simulation_tabs.pack(expand=1, fill="both")
     
-    # def initialize_part1():
+    def initialize_part1(self, simulation_tabs):
+        part1_tab = ttk.Frame(simulation_tabs)
+        simulation_tabs.add(part1_tab, text="Main Page!")
+        
+        part1 = Part1(part1_tab)
+        part1_ipod = iPod(part1_tab)
+        
+        part1.pack(side="top", fill="both", expand=True)
+        part1_ipod.pack(side="bottom", fill="both", expand=True)
     
     # Initializing the tab for Part 2: Electric Field Simulation
     def create_part2_tab(self, simulation_tabs):
@@ -53,7 +66,7 @@ class CoolGUI(tk.Tk):
         simulation_tabs.add(part2_tab, text="Part 2: Electric Field Simulation Minigame")
         
         part2 = Part2(part2_tab)
-        part2.pack(fill="both", expand=True)
+        part2.pack(side="top", fill="both", expand=True)
     
     # Initializing the tab for Part 3: Electric Potential @ Midpoint
     def create_part3_tab(self, simulation_tabs):
@@ -62,7 +75,7 @@ class CoolGUI(tk.Tk):
         simulation_tabs.add(part3_tab, text="Part 3: Electric Potential @ Midpoint Calculation & Graphical Visualization")
         
         part3 = Part3(part3_tab)
-        part3.pack(fill="both", expand=True)
+        part3.pack(side="top", fill="both", expand=True)
     
     # Initializing the tab for Part 4: Oscillating Point Charge
     def create_part4_tab(self, simulation_tabs):
@@ -71,23 +84,101 @@ class CoolGUI(tk.Tk):
         simulation_tabs.add(part4_tab, text="Part 4: Oscillating Point Charge Simulation")
         
         part4 = Part4(part4_tab)
-        part4.pack(fill="both", expand=True)
+        part4.pack(side="top", fill="both", expand=True)
     
-    # Initializing the bonus iPod music player (MIDI player using PyGame)
-    def plug_in_ipod(self, simulation_tabs):
+    # # Initializing the bonus iPod music player (MIDI player using PyGame)
+    # def plug_in_ipod(self, simulation_tabs):
         
-        ipod_tab = ttk.Frame(simulation_tabs)
-        simulation_tabs.add(ipod_tab, text="iPod - 🎵 Now Playing: Africa by Toto... 🎷")
+    #     ipod_tab = ttk.Frame(simulation_tabs)
+    #     simulation_tabs.add(ipod_tab, text="iPod - 🎵 Now Playing: Africa by Toto... 🎷")
         
-        ipodplayer = iPod(ipod_tab)
-        ipodplayer.pack(fill="both", expand=True)
+    #     ipodplayer = iPod(ipod_tab)
+    #     ipodplayer.pack(side="top", fill="both", expand=True)
 
-#class Part1:
+### Extra: Fun MIDI music-player
+class iPod(tk.Frame):
     
-    ##### PH 431: Exploration of Electrodynamic Simulations Project by Dan J.
-    #### Initialization of Project Libraries, Constants, & Jupyter Notebook
+    def __init__(self, root):
+        
+        super().__init__(root)
+        
+        self.turn_on_ipod()
+        
+        #self.play_button_tab = ttk.Frame(self.notebook)
+        #self.stop_button_tab = ttk.Frame(self.notebook)
+        
+        self.play_button = tk.Button(self, text="▶️", command=self.tunes)
+        self.stop_button = tk.Button(self, text="⏹", command=self.stop_tunes)
+        self.play_button.grid(row=5, column=0)
+        self.stop_button.grid(row=5, column=1)
+    
+        self.tunes()
+    
+    def turn_on_ipod(self):
+        
+        clock = pgame.time.Clock()
+        pgame.mixer.init(44100, -16, 2, 1024)
+        pgame.mixer.music.set_volume(0.8)
+        
+        #pgame.mixer.init()
+        
+        #curr = os.path.dirname(os.path.abspath(__file__))
+        #curr = os.getcwd()
+        
+        # Credits to BitMidi for the MIDI file, https://bitmidi.com/toto-africa-mid
+        self.musicfile = "toto-africa.mid"#os.path.join("toto-africa.mid")#curr, "toto-africa.mid") #"toto-africa.mid" 
+        #self.
+        #self.channel = pgame.mixer.Channel(0)
+        self.itunes = pgame.mixer.music#.load(self.musicfile)#pgame.mixer.music.load(self.musicfile)
+        self.itunes.load(self.musicfile)
+    
+    def tunes(self):
+        
+        #self.channel.play(self.itunes)
+        if not self.itunes.get_busy():
+            self.itunes.load(self.musicfile)
+            self.itunes.rewind()
+            #pgame.mixer.music.play()
+            #self.channel.play(self.itunes, loops=-1)
+            self.itunes.play()
+    
+    def stop_tunes(self):
+        
+        #pgame.mixer.music.stop()
+        self.itunes.stop()
+        self.itunes.unload()
+        #pgame.quit()
 
+### GUI Program main page & help guide
+class Part1(tk.Frame):
+    
+    #### PH 431: Exploration of Electrodynamic Simulations Project by Dan J.
+    ### Initialization of Project Libraries, Constants, & Jupyter Notebook
+    def __init__(self, root):
+        
+        super().__init__(root)
+        self.maintext = "Welcome to PH 431 Project: Exploration of Electrodynamic Simulations by Dan J.! \n\n" + \
+                        "This project features three electrodynamic simulations:\n\n" + \
+                        "Part 2: Electric Field Simulation (Left-click adds a positive charge & Right-click adds a negative charge)\n" + \
+                        "Part 3: Calculating & Heatmap Visualization of the Electric Potential @ Midpoint (Between Two Point Charges)\n" + \
+                        "Part 4: Oscillating Point Charge Animation\n\n" + \
+                        "Thank you for checking out my project. I hope you may find it interesting!"
+        self.mainpage = tk.Label(self, text=self.maintext, font=("Times New Roman", 15))
+        self.mainpage.grid(row=0, column=0, pady=50, sticky="WENS")
+        
+        # Mild get-request exploration for downloading the cool electroscope photo
+        cool_electroscope_photo = "https://ia802704.us.archive.org/19/items/sci-inst_21677147/21677147.jpg" # Credits to Middlebury College Library (https://archive.org/details/sci-inst_21677147)
+        photo_download = requests.get(cool_electroscope_photo)
+        photo_data = BytesIO(photo_download.content)
+        
+        processed_photo_data = Image.open(photo_data)
+        shrunk_photo_size = (500, 500)
+        processed_photo_data = processed_photo_data.resize(shrunk_photo_size, Image.ANTIALIAS)
 
+        self.electroscope_photo = ImageTk.PhotoImage(processed_photo_data)
+        self.electroscope_photo_label = tk.Label(self, image=self.electroscope_photo, text="a cool electroscope photo by Middlebury College Library")
+        
+        self.electroscope_photo_label.grid(row=1, column=0, pady=10, sticky="WENS")
 
 ### Encapsulation of Part 2: Electric Field Simulation as a Class
 ### Heavily modified to migrate from PyGame implementation to a tkinter-compatible version
@@ -305,10 +396,13 @@ class Part3(tk.Frame):
         self.new_pointcharge_button.grid(row=3, column=0)
         self.reset_pointcharges_button.grid(row=3, column=1)
 
-        ## Display le output
-        self.figure, self.ax = plot.subplots(figsize=(5, 5))
-        self.canvas = FigureCanvasTkAgg(self.figure, master=self)
-        self.canvas.get_tk_widget().grid(row=4, column=0, columnspan=2)
+        # ## Display le output
+        # self.figure, self.ax = plot.subplots(figsize=(5, 5))
+        # self.canvas = FigureCanvasTkAgg(self.figure, master=self)
+        # self.canvas.get_tk_widget().grid(row=4, column=0, columnspan=2)
+        self.figure = None
+        self.ax = None
+        self.canvas = None
         
         ## Initial refresh of canvas/plot
         self.refresh()
@@ -353,9 +447,13 @@ class Part3(tk.Frame):
 
     ## Refreshing function for the displayed plot
     def refresh(self):
-        
-        self.ax.clear()#output.clear_output(wait=True)
-        #figure, ax = plot.subplots(figsize=(5, 5))
+        #self.canvas.get_tk_widget().grid_c
+        #self.ax.clear()#output.clear_output(wait=True)
+        #self.figure.clear()
+        ## Display le output
+        self.figure, self.ax = plot.subplots(figsize=(5, 5))
+        #self.canvas.get_tk_widget().grid(row=4, column=0, columnspan=2)
+        #self.figure, self.ax = plot.subplots(figsize=(5, 5))
         
         x = np.linspace(0, 10, 100)
         y = np.linspace(0, 10, 100)
@@ -393,7 +491,12 @@ class Part3(tk.Frame):
         
         self.figure.suptitle('PH431 Project: Part 3 - Electric Potential @ Midpoint', fontsize=12)
         
+        if self.canvas: self.canvas.get_tk_widget().grid_forget() # Reset
+        
+        self.canvas = FigureCanvasTkAgg(self.figure, master=self)
         self.canvas.draw()
+        self.canvas.get_tk_widget().grid(row=4, column=0, columnspan=2)
+        #self.canvas.get_tk_widget().pack()
         # with output:
         #     display(figure)
 
@@ -452,82 +555,139 @@ class Part4(tk.Frame):
         self.input_charge_input.insert(0, '1e-19')
         
         self.create_animation_button = tk.Button(self, text='Ready to oscillate?', command=self.button_has_been_clicked)#button_has_been_clicked)
+        self.status_txt = tk.Label(self, text='Oscillator standing by...')
 
+        ## Display tkinter-widgetz
+        self.input_amplitude.grid(row=0, column=0)
+        self.input_amplitude_input.grid(row=0, column=1)
+        self.input_omega.grid(row=1, column=0)
+        self.input_omega_input.grid(row=1, column=1)
+        self.input_charge.grid(row=2, column=0)
+        self.input_charge_input.grid(row=2, column=1)
+        self.create_animation_button.grid(row=3, column=0, columnspan=2)
+        self.status_txt.grid(row=5, column=0, columnspan=2)
+        self.le_animation = None
+        self.anim = None
+        self.canvas = None
+        self.pc = None
+        self.sim = None
+        self.figure, self.ax = None, None
+        self.im_plot = None
+        self.position = None
+        self.total_e = None
+        self.Q = None
+        self.u, self.v, self.r, self.dt, self.t = None, None, None, None, None
+        
+        # Sanity fix for animation not playing, just use HTML
+        self.htmlwindow = HtmlFrame(self, messages_enabled=False)
+        self.htmlwindow.grid(row=4, column=0, columnspan=2)
+        self.htmlform = None
+        
     def new_animation(self, amplitude, omega, charge_magnitude):
         
         self.x, self.y, self.z = np.meshgrid(np.linspace(-self.limit, self.limit, self.gridsize), 0,
                             np.linspace(-self.limit, self.limit, self.gridsize), indexing='ij')
         
-        pc = pyc.OscillatingCharge(origin=(0, 0, 0), direction=(1, 0, 0),
+        self.pc = pyc.OscillatingCharge(origin=(0, 0, 0), direction=(1, 0, 0),
                                 amplitude=amplitude, omega=omega, q=charge_magnitude)
-        sim = pyc.Simulation(pc)
+        self.sim = pyc.Simulation(self.pc)
         
-        figure, ax = plot.subplots(figsize=(5, 5))
+        self.figure, self.ax = plot.subplots(figsize=(5, 5))
         #ax.set_position([0, 0, 1, 1])
-        ax.set_xlim(-self.limit, self.limit)
-        ax.set_ylim(-self.limit, self.limit)
-        
+        self.ax.set_xlim(-self.limit, self.limit)
+        self.ax.set_ylim(-self.limit, self.limit)
+        self.ax.set_title('PH431 Project: Part 4 - Oscillating Point Charge')
         if charge_magnitude > 0:
-            im_plot = ax.imshow(np.zeros((self.gridsize, self.gridsize)), origin='lower',
+            self.im_plot = self.ax.imshow(np.zeros((self.gridsize, self.gridsize)), origin='lower',
                                 extent=(-self.limit, self.limit, -self.limit, self.limit), vmax=7, cmap='seismic_r')
         else:
-            im_plot = ax.imshow(np.zeros((self.gridsize, self.gridsize)), origin='lower',
+            self.im_plot = self.ax.imshow(np.zeros((self.gridsize, self.gridsize)), origin='lower',
                                 extent=(-self.limit, self.limit, -self.limit, self.limit), vmax=7, cmap='RdBu_r')
-        ax.set_xticks([])
-        ax.set_yticks([])
-        im_plot.set_norm(mplotlib.colors.LogNorm(vmin=1e5, vmax=1e8))
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
+        self.im_plot.set_norm(mplotlib.colors.LogNorm(vmin=1e5, vmax=1e8))
         
         self.qx, self.qy, self.qz = np.meshgrid(
             np.linspace(-self.qlimit, self.qlimit, self.qgridsize), 0,
             np.linspace(-self.qlimit, self.qlimit, self.qgridsize), indexing='ij'
         )
-        Q = ax.quiver(self.qx, self.qz, self.qx[:, 0, :], self.qz[:, 0, :],
+        self.Q = self.ax.quiver(self.qx, self.qz, self.qx[:, 0, :], self.qz[:, 0, :],
                     scale_units='xy')
         if charge_magnitude > 0:
-            position = ax.scatter(pc.xpos(0), 0, s=5, marker='o', c='blue')
+            self.position = self.ax.scatter(self.pc.xpos(0), 0, s=5, marker='o', c='blue')
         else:
-            position = ax.scatter(pc.xpos(0), 0, s=5, marker='o', c='red')
-            
+            self.position = self.ax.scatter(self.pc.xpos(0), 0, s=5, marker='o', c='red')
+        
         def _refresh_animation(frame):
+            # if self.status_txt:# self.status.get_tk_widget()
+            #     self.status_txt.get_tk_widget().destroy()
             
-            #debugtxt = f"\rProcessing animation @ frame # {frame+1}/{n_frames}..."
+            debugtxt = f"Processing animation @ frame # {frame + 1}/{self.n_frames}..."
+            self.status_txt.config(text=debugtxt)
+            self.update_idletasks()
+            #self.status_txt.grid(row=5, column=0, columnspan=2)
             #sys.stdout.write(debugtxt)
             #sys.stdout.flush()
-            dt = 2 * np.pi / pc.omega / self.n_frames
-            t = frame * dt
-            total_e = sim.calculate_E(t=t, x=self.x, y=self.y, z=self.z, pcharge_field='Total')
+            #dt = 2 * np.pi / self.pc.omega / self.n_frames
+            self.t = frame * self.dt
+            self.total_e = self.sim.calculate_E(t=self.t, x=self.x, y=self.y, z=self.z, pcharge_field='Total')
             
-            u = total_e[0][:, 0, :]
-            v = total_e[2][:, 0, :]
-            im_plot.set_data(np.sqrt(u ** 2 + v ** 2).T)
+            self.u = self.total_e[0][:, 0, :]
+            self.v = self.total_e[2][:, 0, :]
+            self.im_plot.set_data(np.sqrt(self.u ** 2 + self.v ** 2).T)
             
-            total_e = sim.calculate_E(
-                t=t, x=self.qx, y=self.qy, z=self.qz, pcharge_field='Total'
+            self.total_e = self.sim.calculate_E(
+                t=self.t, x=self.qx, y=self.qy, z=self.qz, pcharge_field='Total'
             )
-            u = total_e[0][:, 0, :]
-            v = total_e[2][:, 0, :]
-            r = np.power(np.add(np.power(u, 2), np.power(v, 2)), 0.5)
+            self.u = self.total_e[0][:, 0, :]
+            self.v = self.total_e[2][:, 0, :]
+            self.r = np.power(np.add(np.power(self.u, 2), np.power(self.v, 2)), 0.5)
             
-            Q.set_UVC(u / r, v / r)
+            self.Q.set_UVC(self.u / self.r, self.v / self.r)
 
-            position.set_offsets((pc.xpos(t), 0))
+            self.position.set_offsets((self.pc.xpos(self.t), 0))
             
-            return im_plot
+            return self.im_plot,
         
         #anim
         
         def _init_animation():
             
-            #return im_plot
-            pass
+            return self.im_plot,
+            #pass
+        
+        self.dt = 2 * np.pi / self.pc.omega / self.n_frames
+        
+        self.anim = animation.FuncAnimation(self.figure, _refresh_animation, frames=self.n_frames, blit=False, init_func=_init_animation)
+        
+        htmlform = self.anim.to_jshtml(fps=self.fps)
+        
+        with open('ph431-project-part4-oscillating-pointcharge.html', 'w') as file:
+            file.write(htmlform)
+        
+        self.htmlwindow.load_html(htmlform)
+        
+        # if self.canvas:
+        #     self.canvas.get_tk_widget().destroy()
+            
+        # self.canvas = FigureCanvasTkAgg(self.figure, master=self)
+        # self.canvas.get_tk_widget().grid(row=4, column=0, columnspan=2)
+        # self.canvas.draw()
+        #plot.close(self.figure)
+        #anim = FuncAnimation(figure, _refresh_animation, frames=self.n_frames, blit=True)
+        
+        #ax.axis('off')
+        
         
         #dt = 2 * np.pi / pc.omega / n_frames
         
-        anim = FuncAnimation(figure, _refresh_animation,
-                            frames=self.n_frames, blit=False, init_func=_init_animation
-                            )
-        ax.set_title('PH431 Project: Part 4 - Oscillating Point Charge')
-        ax.axis('off')
+        # self.anim = FuncAnimation(figure, _refresh_animation,
+        #                     frames=36, blit=True, init_func=_init_animation
+        #                     )
+        #self.anim = animation.FuncAnimation(figure, _refresh_animation, interval=1000/self.fps, frames=36, blit=True)
+        #anim = FuncAnimation(figure, _refresh_animation, frames=self.n_frames, blit=True)
+        #ax.set_title('PH431 Project: Part 4 - Oscillating Point Charge')
+        #ax.axis('off')
         
         #figure.suptitle('PH431 Project: Part 4 - Oscillating Point Charge', fontsize=12)
         #plot.close(figure)
@@ -541,7 +701,7 @@ class Part4(tk.Frame):
         
         #sys.stdout.flush()
         
-        return anim#.to_jshtml(fps=fps)
+        #return anim#.to_jshtml(fps=fps)
 
     ## Display le widgetz
     #display(input_amplitude, input_omega, input_charge, create_animation_button, output)
@@ -558,20 +718,26 @@ class Part4(tk.Frame):
         
         except ValueError:
             print("Whoopsie, please make sure that you enter valid/reasonable, numerical float values for the charge amplitude, angular frequency, and charge magnitude!")
+            return
         
-        # Create le new animation
-        self.le_animation = self.new_animation(amp, angfrq, charge_val)
+        # # Create le new animation
+        # if self.canvas:
+        #     self.canvas.get_tk_widget().grid_forget() # Reset
+        #     #self.canvas = FigureCanvasTkAgg(self.figure, master=self)
         
-        # Setup le animation screen (tkinter canvas)
-        self.canvas = FigureCanvasTkAgg(self.le_animation._fig, master=self)
-        self.canvas.get_tk_widget().grid(row=4, column=0, columnspan=2)
+        self.new_animation(amp, angfrq, charge_val)
+        
+        # # Setup le animation screen (tkinter canvas)
+        # self.canvas = FigureCanvasTkAgg(self.anim._fig, master=self)
+        # self.canvas.get_tk_widget().grid(row=4, column=0, columnspan=2)
         
         # Begin le animation
         
-        self.le_animation._start()
+        #self.le_animation._start()
         #self.le_animation._stop()
         
-        self.canvas.draw()
+        # self.canvas.draw()
+        # self._animation_origin = self.anim
         # 
         # le_animation = new_animation(input_amplitude.value, input_omega.value, input_charge.value)
         # html_wd = le_animation.to_jshtml(fps=fps)
@@ -590,58 +756,58 @@ class Part4(tk.Frame):
     #create_animation_button.on_click(button_has_been_clicked)
 
 ### Extra: Fun MIDI music-player
-class iPod(tk.Frame):
+# class iPod(tk.Frame):
     
-    def __init__(self, root):
+#     def __init__(self, root):
         
-        super().__init__(root)
+#         super().__init__(root)
         
-        self.turn_on_ipod()
+#         self.turn_on_ipod()
         
-        #self.play_button_tab = ttk.Frame(self.notebook)
-        #self.stop_button_tab = ttk.Frame(self.notebook)
+#         #self.play_button_tab = ttk.Frame(self.notebook)
+#         #self.stop_button_tab = ttk.Frame(self.notebook)
         
-        self.play_button = tk.Button(self, text="▶️", command=self.tunes)
-        self.stop_button = tk.Button(self, text="⏹", command=self.stop_tunes)
-        self.play_button.grid(row=0, column=0)
-        self.stop_button.grid(row=0, column=1)
+#         self.play_button = tk.Button(self, text="▶️", command=self.tunes)
+#         self.stop_button = tk.Button(self, text="⏹", command=self.stop_tunes)
+#         self.play_button.grid(row=0, column=0)
+#         self.stop_button.grid(row=0, column=1)
     
-        self.tunes()
+#         self.tunes()
     
-    def turn_on_ipod(self):
+#     def turn_on_ipod(self):
         
-        clock = pgame.time.Clock()
-        pgame.mixer.init(44100, -16, 2, 1024)
-        pgame.mixer.music.set_volume(0.8)
+#         clock = pgame.time.Clock()
+#         pgame.mixer.init(44100, -16, 2, 1024)
+#         pgame.mixer.music.set_volume(0.8)
         
-        #pgame.mixer.init()
+#         #pgame.mixer.init()
         
-        #curr = os.path.dirname(os.path.abspath(__file__))
-        #curr = os.getcwd()
+#         #curr = os.path.dirname(os.path.abspath(__file__))
+#         #curr = os.getcwd()
         
-        # Credits to BitMidi for the MIDI file, https://bitmidi.com/toto-africa-mid
-        self.musicfile = "toto-africa.mid"#os.path.join("toto-africa.mid")#curr, "toto-africa.mid") #"toto-africa.mid" 
-        #self.
-        #self.channel = pgame.mixer.Channel(0)
-        self.itunes = pgame.mixer.music#.load(self.musicfile)#pgame.mixer.music.load(self.musicfile)
-        self.itunes.load(self.musicfile)
+#         # Credits to BitMidi for the MIDI file, https://bitmidi.com/toto-africa-mid
+#         self.musicfile = "toto-africa.mid"#os.path.join("toto-africa.mid")#curr, "toto-africa.mid") #"toto-africa.mid" 
+#         #self.
+#         #self.channel = pgame.mixer.Channel(0)
+#         self.itunes = pgame.mixer.music#.load(self.musicfile)#pgame.mixer.music.load(self.musicfile)
+#         self.itunes.load(self.musicfile)
     
-    def tunes(self):
+#     def tunes(self):
         
-        #self.channel.play(self.itunes)
-        if not self.itunes.get_busy():
-            self.itunes.load(self.musicfile)
-            self.itunes.rewind()
-            #pgame.mixer.music.play()
-            #self.channel.play(self.itunes, loops=-1)
-            self.itunes.play()
+#         #self.channel.play(self.itunes)
+#         if not self.itunes.get_busy():
+#             self.itunes.load(self.musicfile)
+#             self.itunes.rewind()
+#             #pgame.mixer.music.play()
+#             #self.channel.play(self.itunes, loops=-1)
+#             self.itunes.play()
     
-    def stop_tunes(self):
+#     def stop_tunes(self):
         
-        #pgame.mixer.music.stop()
-        self.itunes.stop()
-        self.itunes.unload()
-        #pgame.quit()
+#         #pgame.mixer.music.stop()
+#         self.itunes.stop()
+#         self.itunes.unload()
+#         #pgame.quit()
 
 if __name__ == "__main__":
     ph431_electrodynamic_sim_project = CoolGUI()
